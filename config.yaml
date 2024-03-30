@@ -1,0 +1,119 @@
+mixed-port: 7892
+tproxy-port: 7894
+allow-lan: true
+mode: rule
+geodata-mode: true
+unified-delay: true
+log-level: error
+ipv6: true
+external-controller: 127.0.0.1:9090
+#external-ui: dashboard
+secret: ""
+enable-process: true
+find-process-mode: strict
+#tcp-concurrent: true
+
+geox-url:
+  geoip: "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat"
+  geosite: "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
+  mmdb: "github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb"
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+sniffer:
+  enable: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+    HTTP:
+      ports: [80, 8080-8880]
+      override-destination: true
+
+tun:
+  enable: true
+  device: tun0
+  stack: mixed
+  inet6-address: 
+  dns-hijack:
+    - 'any:53'
+  auto-route: true
+  auto-detect-interface: true
+
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 28.0.0.1/8
+  fake-ip-filter:
+    - '*'
+    - '+.lan'
+    - 'connect.rom.miui.com'
+  nameserver:
+    - 119.29.29.29
+    - 223.5.5.5
+    - 8.8.8.8
+proxies:
+
+proxy-providers:
+  sub:
+    type: http
+    url: "sub-link"
+    interval: 21600
+    path: ./proxy_providers/sub.yaml   
+
+proxy-groups:
+ - name: PROXY
+   type: select
+   proxies:
+     - DIRECT
+   use:
+     - sub
+ - name: AD
+   type: select
+   proxies:
+     - REJECT
+     - DIRECT
+ - name: emby
+   type: select
+   proxies:
+     - DIRECT
+   use:
+     - sub
+   filter: "(?i)美|us|unitedstates|united states"
+
+rule-providers:
+  AD:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/privacy-protection-tools/anti-AD/master/anti-ad-clash.yaml"
+    path: ./rules/AD.yaml
+    interval: 86400
+
+  direct:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt"
+    path: ./rules/direct.yaml
+    interval: 86400
+
+  GFW:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/gfw.txt"
+    path: ./rules/GFW.yaml
+    interval: 86400
+
+rules:
+  - AND,((NETWORK,UDP),(DST-PORT,123)),DIRECT
+  - DOMAIN-SUFFIX,hanxuts.top,DIRECT
+  - DOMAIN-KEYWORD,embyplus,emby
+  - DOMAIN-KEYWORD,pilipiliultra,emby
+  - RULE-SET,AD,AD
+  - RULE-SET,GFW,PROXY
+  - RULE-SET,direct, DIRECT
+  - GEOSITE,CN,DIRECT
+  - GEOIP,CN,DIRECT
+  - MATCH,PROXY
